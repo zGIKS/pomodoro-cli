@@ -12,7 +12,7 @@ use crossterm::{
 use ratatui::{backend::CrosstermBackend, Terminal};
 
 mod app;
-mod dog;
+mod components;
 mod ui;
 
 use crate::app::App;
