@@ -6,7 +6,7 @@ use ratatui::{
     Frame,
 };
 
-use crate::app::{App, Phase};
+use crate::domain::{App, Phase};
 
 pub fn render(f: &mut Frame, app: &App, area: ratatui::layout::Rect) {
     let chunks = Layout::default()
@@ -19,13 +19,13 @@ pub fn render(f: &mut Frame, app: &App, area: ratatui::layout::Rect) {
         .split(area);
 
     // 1. GIGANTIC TIMER (The "cronómetro")
-    let timer_text = format!("   {}   ", app.formatted_time());
+    let timer_text = format!("   {}   ", app.timer.formatted_time());
     let timer_widget = Paragraph::new(timer_text.bold().white().on_dark_gray())
         .alignment(Alignment::Center);
     f.render_widget(timer_widget, chunks[0]);
 
     // 2. Bar logic
-    let ratio = app.progress_ratio();
+    let ratio = app.timer.progress_ratio();
     let percentage = (ratio * 100.0) as u16;
     let width = 40; 
     let filled_count = (ratio * width as f32) as usize;

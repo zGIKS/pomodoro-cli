@@ -5,8 +5,8 @@ use ratatui::{
     Frame,
 };
 
-use crate::app::{App, Phase};
-use crate::components::speech_bubble;
+use crate::domain::{App, Phase};
+use super::speech_bubble;
 
 // Refined Dog ASCII art frames
 pub const DOG_FRAME_1: &str = r#"      .─.        
@@ -36,14 +36,14 @@ pub fn render(f: &mut Frame, app: &App, area: ratatui::layout::Rect) {
             if app.task_name.is_empty() {
                 String::from("WORKING...")
             } else {
-                format!("FOCUSING ON: {}", app.task_name)
+                format!("FOCUSING ON: {}", app.task_name.as_str())
             }
         }
         Phase::Break => {
             if app.task_name.is_empty() {
                 String::from("RESTING...")
             } else {
-                format!("RESTING FROM: {}", app.task_name)
+                format!("RESTING FROM: {}", app.task_name.as_str())
             }
         }
     };

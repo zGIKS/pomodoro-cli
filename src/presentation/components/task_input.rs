@@ -6,7 +6,7 @@ use ratatui::{
     Frame,
 };
 
-use crate::app::{App, MAX_TASK_NAME_LEN};
+use crate::domain::{App, MAX_TASK_NAME_LEN};
 
 pub fn render(f: &mut Frame, app: &App, area: ratatui::layout::Rect) {
     let chunks = Layout::default()
@@ -40,7 +40,7 @@ pub fn render(f: &mut Frame, app: &App, area: ratatui::layout::Rect) {
     let input_text = if app.task_name.is_empty() {
         Span::styled("Type task name...", Style::default().fg(Color::DarkGray).italic())
     } else {
-        Span::styled(&app.task_name, Style::default().fg(Color::White).bold())
+        Span::styled(app.task_name.as_str(), Style::default().fg(Color::White).bold())
     };
 
     // Add a blinking cursor effect

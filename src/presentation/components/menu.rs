@@ -6,7 +6,7 @@ use ratatui::{
     Frame,
 };
 
-use crate::app::App;
+use crate::domain::App;
 
 pub fn render(f: &mut Frame, app: &App, area: ratatui::layout::Rect) {
     let chunks = Layout::default()

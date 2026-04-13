@@ -3,8 +3,8 @@ use ratatui::{
     Frame,
 };
 
-use crate::app::{App, AppState};
-use crate::components::{dog, progress_bar, menu, task_input};
+use crate::domain::{App, AppState};
+use super::components::{dog, progress_bar, menu, task_input};
 
 /// Core UI Entrypoint
 pub fn render(f: &mut Frame, app: &App) {
