@@ -91,6 +91,14 @@ impl App {
         self.task_name.pop();
     }
 
+    pub fn remove_word(&mut self) {
+        if let Some(last_space_idx) = self.task_name.trim_end().rfind(' ') {
+            self.task_name.truncate(last_space_idx + 1);
+        } else {
+            self.task_name.clear();
+        }
+    }
+
     pub fn tick(&mut self) {
         if self.state == AppState::Running {
             if self.remaining_secs > 0 {
