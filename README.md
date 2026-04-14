@@ -1,97 +1,90 @@
 # POMODOG
 
-![POMODOG](https://i.imgur.com/8lYTeu7.png)
+![POMODOG](https://i.imgur.com/eXUcFEH.png)
 
-**Pomodog** is a minimalist, high-performance Pomodoro CLI tool built with Rust. It features a cute ASCII dog companion to keep you focused during your deep work sessions.
+Pomodog is a terminal-first Pomodoro timer written in Rust.
+It combines a fast TUI, automatic session persistence, and a small ASCII dog companion that reflects your focus state (`WORKING`, `RESTING`, `PAUSED`).
 
-## Why Pomodog?
+## Features
 
-Most Pomodoro apps are either too complex or live in a browser tab that distracts you. **Pomodog** solves this by:
-- **Staying in your Terminal**: No tab-switching, no distractions.
-- **Extreme Efficiency**: Consumes < 4MB of RAM and 0% CPU when idle.
-- **Persistence**: Your session is automatically saved. If you close the terminal or it crashes, you can resume exactly where you left off.
-- **Cute Motivation**: An animated ASCII dog that "works" and "rests" with you.
+- Terminal-native workflow with no browser distractions.
+- Built-in presets: `Classic (25/5)`, `Focus (50/10)`, `Quick (15/5)`.
+- Instant `Space` pause/resume toggle during active sessions.
+- Automatic persistence and resume flow after restart.
+- Clean architecture with separated domain/application/infrastructure/presentation layers.
 
----
+## Quick Start
 
-## Architecture & Design
+### Prerequisites
 
-The project follows **Domain-Driven Design (DDD)** principles and a clean separation of concerns, avoiding "God Object" patterns.
+- Rust toolchain (Edition 2024)
+- Cargo
 
-### 1. Domain Layer (`src/domain/`)
-- **`Session`**: The core "aggregate". It manages the Pomodoro logic (Work vs. Break phases), the internal `Timer`, and the `TaskName`.
-- **`App`**: A UI coordinator. It handles application states (`Menu`, `TaskInput`, `Running`, `Paused`), manages user navigation, and orchestrates the transition between the UI and the domain `Session`.
-- **`Value Objects`**: Immutable-like structures such as `Timer`, `Phase`, and `TaskName` that ensure the internal state is always valid.
+### Run in development
 
-### 2. Application Layer (`src/application/`)
-- **`Runner`**: The engine of the app. It handles the 150ms animation tick, the 1s logic tick, and the event polling loop. It is also responsible for triggering the persistence auto-saves.
-- **`EventHandler`**: Decouples keyboard/mouse input from the `App` logic, translating raw events into domain actions.
+```bash
+cargo run
+```
 
-### 3. Infrastructure Layer (`src/infrastructure/`)
-- **`Persistence`**: Abstracted via a trait. Currently implemented as `TomlPersistence`, which saves sessions to the standard XDG config directory for your OS.
-- **`Terminal`**: Manages the raw mode and TUI initialization/cleanup.
+### Build release binary
 
-### 4. Presentation Layer (`src/presentation/`)
-- **Functional Rendering**: Uses `ratatui` for an immediate-mode UI. Components are stateless and purely represent the current domain state.
+```bash
+cargo build --release
+```
 
----
+### Test and lint
 
-## Persistence Mechanism
-
-Pomodog features a robust persistence system:
-- **Storage**: Sessions are stored in `~/.config/pomodog/session.toml` (on Linux).
-- **Auto-Save**: The `Runner` saves the state every second while a session is active.
-- **Resume Logic**: On startup, if a saved session is detected, Pomodog prompts you to "RESUME PREVIOUS". If you decline, the old session is safely deleted to avoid stale data.
-- **Trait-Based**: The persistence is decoupled via the `Persistence` trait, making it easy to swap the TOML backend for a database or cloud sync in the future.
-
----
-
-## Nix Support
-
-This project is fully "Nixified" with **Nix Flakes**.
-
-- **Build**: `nix build`
-- **Run**: `nix run`
-- **Development**: `nix develop` (provides a complete Rust toolchain, `rust-analyzer`, and `pkg-config`).
-
----
+```bash
+cargo test
+cargo clippy
+```
 
 ## Controls
 
 | Key | Action |
 |-----|--------|
-| `↑` `↓` | Navigate menu / Scroll |
-| `Enter` | Select option / Start session |
-| `Esc` | Return to menu |
-| `Space` | Toggle Pause/Resume |
-| `Backspace` | Delete character in input |
-| `Ctrl+BS` | Delete full word in input |
+| `↑` / `↓` | Navigate menu |
+| Mouse wheel | Navigate menu |
+| `Enter` | Select option / Start session from task input |
+| `Esc` | Return to menu (from task input) |
+| `Space` | Toggle pause/resume while running |
+| `Backspace` | Delete one character in task input |
+| `Ctrl+Backspace` | Delete one word in task input |
 | `q` / `Ctrl+C` | Quit |
 
----
+## Usage Flow
 
-## Development
+1. Select a session preset in the main menu.
+2. Enter your task name.
+3. Press `Enter` to start.
+4. Pomodog alternates automatically between work and break phases.
+5. Press `Space` to pause/resume at any moment.
 
-### Prerequisites
-- Rust (Edition 2024)
-- Cargo
+Note: work/break phases loop continuously until you quit the app.
 
-### Commands
+## Persistence
+
+- Backend: TOML (`TomlPersistence`).
+- File location (Linux): `~/.config/pomodog/session.toml`.
+- Auto-save: every second while app state is `Running` or `Paused`.
+- Resume flow: startup menu shows `RESUME PREVIOUS` when a session exists.
+- Cleanup: the saved file is removed when no session needs to be preserved.
+
+## Architecture
+
+- `src/domain/`: core models and rules (`App`, `Session`, `Timer`, `TaskName`, `Phase`).
+- `src/application/`: input/event handling and main loop (`event_handler`, `runner`).
+- `src/infrastructure/`: terminal setup/restore and persistence adapter.
+- `src/presentation/`: `ratatui` rendering and stateless UI components.
+
+## Nix Support
+
 ```bash
-# Run in development mode
-cargo run
-
-# Run tests
-cargo test
-
-# Build optimized release binary
-cargo build --release
-
-# Run Clippy (Linter)
-cargo clippy
+nix build
+nix run
+nix develop
 ```
 
----
-
 ## License
+
 MIT © [zGIKS](https://github.com/zGIKS)
