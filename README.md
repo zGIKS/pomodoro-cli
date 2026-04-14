@@ -1,4 +1,4 @@
-# PomDog
+# POMODOG
 
 A TUI Pomodoro timer built with Rust using ratatui and crossterm.
 

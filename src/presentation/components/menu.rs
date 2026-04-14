@@ -31,7 +31,7 @@ pub fn render(f: &mut Frame, app: &App, area: ratatui::layout::Rect) {
         Line::from(""),
         Line::from(vec![
             Span::styled(" ⬢ ", Style::default().fg(Color::Cyan)),
-            Span::styled("POMDOG SESSION", Style::default().bold().white()),
+            Span::styled("POMODOG", Style::default().bold().white()),
             Span::styled(" ⬢ ", Style::default().fg(Color::Cyan)),
         ]),
         Line::from("────────────────────────────".dim()),
