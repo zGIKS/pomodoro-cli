@@ -8,7 +8,7 @@ use ratatui::{
 
 use crate::domain::{App, MAX_TASK_NAME_LEN};
 
-pub fn render(f: &mut Frame, app: &App, area: ratatui::layout::Rect) {
+pub fn render(f: &mut Frame, app: &App, area: ratatui::layout::Rect, frame_count: usize) {
     let chunks = Layout::default()
         .direction(Direction::Vertical)
         .constraints([
@@ -22,7 +22,7 @@ pub fn render(f: &mut Frame, app: &App, area: ratatui::layout::Rect) {
         .direction(Direction::Horizontal)
         .constraints([
             Constraint::Fill(1),
-            Constraint::Length(50),
+            Constraint::Length(44), // Consistent width with Menu
             Constraint::Fill(1),
         ])
         .split(chunks[1]);
@@ -31,7 +31,7 @@ pub fn render(f: &mut Frame, app: &App, area: ratatui::layout::Rect) {
 
     let header = Paragraph::new(vec![
         Line::from(format!(" MODE: {} ", config.label).bold().cyan()),
-        Line::from("──────────────────────────────────".dim()),
+        Line::from("────────────────────────────────────────".dim()),
         Line::from(" What are you working on? ".white()),
         Line::from(""),
     ])
@@ -49,7 +49,7 @@ pub fn render(f: &mut Frame, app: &App, area: ratatui::layout::Rect) {
         )
     };
 
-    let cursor = if app.frame_count() % 4 < 2 { "_" } else { " " };
+    let cursor = if frame_count % 4 < 2 { "_" } else { " " };
 
     let input_box = Paragraph::new(Line::from(vec![
         input_text,

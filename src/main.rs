@@ -1,7 +1,8 @@
 use anyhow::Result;
 use crate::application::runner;
-use crate::domain::App;
+use crate::domain::repository::Persistence;
 use crate::infrastructure::terminal;
+use crate::infrastructure::persistence::TomlPersistence;
 
 mod application;
 mod domain;
@@ -19,10 +20,12 @@ fn main() -> Result<()> {
 
     // 2. TUI Initialization
     let mut tui_terminal = terminal::init()?;
-    let app = App::new();
     
+    let persistence = TomlPersistence;
+    let app = persistence.load().ok().flatten().unwrap_or_default();
+
     // 3. Application Execution
-    let result = runner::run(&mut tui_terminal, app);
+    let result = runner::run(&mut tui_terminal, app, &persistence);
 
     // 4. Normal Cleanup
     terminal::restore()?;

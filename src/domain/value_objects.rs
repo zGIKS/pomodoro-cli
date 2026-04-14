@@ -1,4 +1,6 @@
-#[derive(Default, Debug, Clone, Copy, PartialEq, Eq)]
+use serde::{Deserialize, Serialize};
+
+#[derive(Default, Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Phase {
     #[default]
     Work,
@@ -7,7 +9,7 @@ pub enum Phase {
 
 pub const MAX_TASK_NAME_LEN: usize = 25;
 
-#[derive(Default, Clone, PartialEq, Eq)]
+#[derive(Default, Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct TaskName(String);
 
 impl TaskName {
@@ -50,7 +52,7 @@ fn is_valid_input_char(c: char) -> bool {
     !c.is_control() && c != '\u{200B}' && c != '\u{200C}' && c != '\u{200D}' && c != '\u{FEFF}'
 }
 
-#[derive(Default, Clone, Copy, PartialEq, Eq)]
+#[derive(Default, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum InputError {
     #[default]
     None,
@@ -70,7 +72,7 @@ impl InputError {
     }
 }
 
-#[derive(Default, Clone, Copy, PartialEq, Eq)]
+#[derive(Default, Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Timer {
     remaining_secs: u32,
     total_secs: u32,

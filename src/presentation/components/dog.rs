@@ -20,27 +20,31 @@ pub const DOG_FRAME_2: &str = r#"      .─.
    ) /   |        
    \(_)_]]        "#;
 
-pub fn render(f: &mut Frame, app: &App, area: ratatui::layout::Rect) {
+pub fn render(f: &mut Frame, app: &App, area: ratatui::layout::Rect, frame_count: usize) {
     let chunks = Layout::default()
         .direction(Direction::Vertical)
         .constraints([Constraint::Length(5), Constraint::Length(6)])
         .split(area);
 
-    let message = match app.phase() {
-        Phase::Work => {
-            if app.task_name().is_empty() {
-                String::from("WORKING...")
-            } else {
-                format!("FOCUSING ON: {}", app.task_name().as_str())
+    let message = if let Some(session) = app.session() {
+        match session.phase {
+            Phase::Work => {
+                if session.task_name.is_empty() {
+                    String::from("WORKING...")
+                } else {
+                    format!("FOCUSING ON: {}", session.task_name.as_str())
+                }
+            }
+            Phase::Break => {
+                if session.task_name.is_empty() {
+                    String::from("RESTING...")
+                } else {
+                    format!("RESTING FROM: {}", session.task_name.as_str())
+                }
             }
         }
-        Phase::Break => {
-            if app.task_name().is_empty() {
-                String::from("RESTING...")
-            } else {
-                format!("RESTING FROM: {}", app.task_name().as_str())
-            }
-        }
+    } else {
+        String::from("IDLE...")
     };
 
     let display_msg = if message.len() > 45 {
@@ -58,7 +62,7 @@ pub fn render(f: &mut Frame, app: &App, area: ratatui::layout::Rect) {
         chunks[0],
     );
 
-    let current_frame = if app.frame_count().is_multiple_of(2) {
+    let current_frame = if frame_count.is_multiple_of(2) {
         DOG_FRAME_1
     } else {
         DOG_FRAME_2

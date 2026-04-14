@@ -18,12 +18,18 @@ pub fn render(f: &mut Frame, app: &App, area: ratatui::layout::Rect) {
         ])
         .split(area);
 
-    let timer_text = format!("   {}   ", app.timer().formatted_time());
+    let session = if let Some(s) = app.session() {
+        s
+    } else {
+        return;
+    };
+
+    let timer_text = format!("   {}   ", session.timer.formatted_time());
     let timer_widget =
         Paragraph::new(timer_text.bold().white().on_dark_gray()).alignment(Alignment::Center);
     f.render_widget(timer_widget, chunks[0]);
 
-    let ratio = app.timer().progress_ratio();
+    let ratio = session.timer.progress_ratio();
     let percentage = (ratio * 100.0) as u16;
     let width = 40;
     let filled_count = (ratio * width as f32) as usize;
@@ -43,7 +49,7 @@ pub fn render(f: &mut Frame, app: &App, area: ratatui::layout::Rect) {
         }
     }
 
-    let (status_label, status_color) = match app.phase() {
+    let (status_label, status_color) = match session.phase {
         Phase::Work => (" WORKING ", Color::Blue),
         Phase::Break => (" RESTING ", Color::Green),
     };

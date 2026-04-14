@@ -1,10 +1,13 @@
 pub mod entities;
 pub mod value_objects;
+pub mod repository;
 
 pub use entities::*;
 pub use value_objects::*;
 
-#[derive(Default, Debug, PartialEq, Eq, Clone, Copy)]
+use serde::{Deserialize, Serialize};
+
+#[derive(Default, Debug, PartialEq, Eq, Clone, Copy, Serialize, Deserialize)]
 pub enum AppState {
     #[default]
     Menu,
@@ -13,17 +16,23 @@ pub enum AppState {
     Paused,
 }
 
+#[derive(Serialize, Deserialize)]
 pub struct App {
-    frame_count: usize,
-    should_quit: bool,
     state: AppState,
-    phase: Phase,
+    #[serde(skip)]
+    recovered_session: Option<Session>,
+    #[serde(skip)]
+    has_saved_session: bool,
     configs: Vec<SessionConfig>,
     selected_index: usize,
-    timer: Timer,
-    task_name: TaskName,
+    active_session: Option<Session>,
+    task_name_input: TaskName,
+    #[serde(skip)]
     input_error: InputError,
+    #[serde(skip)]
     error_timer: u32,
+    #[serde(skip)]
+    should_quit: bool,
 }
 
 impl Default for App {
@@ -53,47 +62,98 @@ impl App {
         ];
 
         Self {
-            frame_count: 0,
-            should_quit: false,
             state: AppState::Menu,
-            phase: Phase::Work,
+            recovered_session: None,
+            has_saved_session: false,
             configs,
             selected_index: 0,
-            timer: Timer::default(),
-            task_name: TaskName::default(),
+            active_session: None,
+            task_name_input: TaskName::default(),
             input_error: InputError::default(),
             error_timer: 0,
+            should_quit: false,
+        }
+    }
+
+    pub fn set_resume_session(&mut self, session: Session) {
+        self.recovered_session = Some(session);
+        self.active_session = None;
+        self.has_saved_session = true;
+        self.state = AppState::Menu;
+        self.selected_index = 0;
+    }
+
+    pub fn resume_session(&mut self) {
+        if let Some(session) = self.recovered_session.take() {
+            self.active_session = Some(session);
+            self.state = AppState::Running;
+            self.has_saved_session = false;
+        }
+    }
+
+    pub fn discard_saved_session(&mut self) {
+        self.has_saved_session = false;
+        self.recovered_session = None;
+        if self.selected_index > 0 {
+            self.selected_index -= 1;
+        }
+    }
+
+    fn total_options(&self) -> usize {
+        if self.has_saved_session {
+            self.configs.len() + 1
+        } else {
+            self.configs.len()
         }
     }
 
     pub fn next_option(&mut self) {
-        if self.configs.is_empty() {
+        let total = self.total_options();
+        if total == 0 {
             return;
         }
-        self.selected_index = (self.selected_index + 1) % self.configs.len();
+        self.selected_index = (self.selected_index + 1) % total;
     }
 
     pub fn prev_option(&mut self) {
-        if self.configs.is_empty() {
+        let total = self.total_options();
+        if total == 0 {
             return;
         }
         if self.selected_index == 0 {
-            self.selected_index = self.configs.len() - 1;
+            self.selected_index = total - 1;
         } else {
             self.selected_index -= 1;
         }
     }
 
+    pub fn has_saved_session(&self) -> bool {
+        self.has_saved_session
+    }
+
+    pub fn select_current_option(&mut self) {
+        if self.has_saved_session {
+            if self.selected_index == 0 {
+                self.resume_session();
+            } else {
+                self.discard_saved_session();
+                self.enter_task_input();
+            }
+        } else {
+            self.enter_task_input();
+        }
+    }
+
     pub fn enter_task_input(&mut self) {
         self.state = AppState::TaskInput;
-        self.task_name.clear();
+        self.task_name_input.clear();
         self.input_error = InputError::default();
         self.error_timer = 0;
     }
 
     pub fn enter_menu(&mut self) {
         self.state = AppState::Menu;
-        self.task_name.clear();
+        self.task_name_input.clear();
         self.input_error = InputError::default();
         self.error_timer = 0;
     }
@@ -102,13 +162,12 @@ impl App {
         if self.configs.is_empty() {
             return;
         }
-        if self.task_name.is_empty() {
+        if self.task_name_input.is_empty() {
             self.set_input_error(InputError::Empty);
             return;
         }
-        let config = &self.configs[self.selected_index];
-        self.phase = Phase::Work;
-        self.timer.reset(config.work_duration_min * 60);
+        let config = self.configs[self.selected_index].clone();
+        self.active_session = Some(Session::new(self.task_name_input.clone(), config));
         self.state = AppState::Running;
         self.input_error = InputError::default();
         self.error_timer = 0;
@@ -133,13 +192,12 @@ impl App {
     }
 
     pub fn tick(&mut self) {
-        if self.state == AppState::Running && self.timer.tick() {
-            self.transition_phase();
+        if let (AppState::Running, Some(session)) = (self.state, &mut self.active_session) {
+            session.tick();
         }
     }
 
-    pub fn update_frame(&mut self) {
-        self.frame_count += 1;
+    pub fn update_error_timer(&mut self) {
         if self.error_timer > 0 {
             self.error_timer -= 1;
             if self.error_timer == 0 {
@@ -156,16 +214,12 @@ impl App {
         self.state
     }
 
-    pub fn phase(&self) -> Phase {
-        self.phase
-    }
-
-    pub fn frame_count(&self) -> usize {
-        self.frame_count
-    }
-
     pub fn task_name(&self) -> &TaskName {
-        &self.task_name
+        if let Some(session) = &self.active_session {
+            &session.task_name
+        } else {
+            &self.task_name_input
+        }
     }
 
     pub fn selected_index(&self) -> usize {
@@ -176,8 +230,8 @@ impl App {
         &self.configs
     }
 
-    pub fn timer(&self) -> &Timer {
-        &self.timer
+    pub fn session(&self) -> Option<&Session> {
+        self.active_session.as_ref()
     }
 
     pub fn should_quit(&self) -> bool {
@@ -185,29 +239,15 @@ impl App {
     }
 
     pub fn add_char_to_task(&mut self, c: char) {
-        self.task_name.add_char(c);
+        self.task_name_input.add_char(c);
     }
 
     pub fn remove_char_from_task(&mut self) {
-        self.task_name.remove_char();
+        self.task_name_input.remove_char();
     }
 
     pub fn remove_word_from_task(&mut self) {
-        self.task_name.remove_word();
-    }
-
-    fn transition_phase(&mut self) {
-        let config = &self.configs[self.selected_index];
-        match self.phase {
-            Phase::Work => {
-                self.phase = Phase::Break;
-                self.timer.reset(config.break_duration_min * 60);
-            }
-            Phase::Break => {
-                self.phase = Phase::Work;
-                self.timer.reset(config.work_duration_min * 60);
-            }
-        }
+        self.task_name_input.remove_word();
     }
 
     pub fn toggle_pause(&mut self) {

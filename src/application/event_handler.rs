@@ -11,7 +11,7 @@ pub fn handle_key_event(app: &mut App, key: event::KeyEvent) {
 
         (KeyCode::Up, _, AppState::Menu) => app.prev_option(),
         (KeyCode::Down, _, AppState::Menu) => app.next_option(),
-        (KeyCode::Enter, _, AppState::Menu) => app.enter_task_input(),
+        (KeyCode::Enter, _, AppState::Menu) => app.select_current_option(),
 
         (KeyCode::Char(c), mods, AppState::TaskInput) => {
             if mods.is_empty() || mods == KeyModifiers::SHIFT {

@@ -9,11 +9,14 @@ use ratatui::{
 use crate::domain::App;
 
 pub fn render(f: &mut Frame, app: &App, area: ratatui::layout::Rect) {
+    let menu_box_height = if app.has_saved_session() { 6 } else { 5 };
+    let total_box_height = 4 + menu_box_height + 3;
+
     let chunks = Layout::default()
         .direction(Direction::Vertical)
         .constraints([
             Constraint::Fill(1),
-            Constraint::Length(12),
+            Constraint::Length(total_box_height),
             Constraint::Fill(1),
         ])
         .split(area);
@@ -22,7 +25,7 @@ pub fn render(f: &mut Frame, app: &App, area: ratatui::layout::Rect) {
         .direction(Direction::Horizontal)
         .constraints([
             Constraint::Fill(1),
-            Constraint::Length(40),
+            Constraint::Length(44),
             Constraint::Fill(1),
         ])
         .split(chunks[1]);
@@ -34,22 +37,43 @@ pub fn render(f: &mut Frame, app: &App, area: ratatui::layout::Rect) {
             Span::styled("POMODOG", Style::default().bold().white()),
             Span::styled(" ⬢ ", Style::default().fg(Color::Cyan)),
         ]),
-        Line::from("────────────────────────────".dim()),
+        Line::from("────────────────────────────────────────".dim()),
     ])
     .alignment(Alignment::Center);
 
     let mut options = Vec::new();
-    for (i, config) in app.configs().iter().enumerate() {
-        if i == app.selected_index() {
+    
+    // Resume option if available
+    if app.has_saved_session() {
+        if app.selected_index() == 0 {
             options.push(Line::from(vec![
-                Span::styled("  » ", Style::default().fg(Color::Yellow).bold()),
+                Span::styled("» ", Style::default().fg(Color::Yellow).bold()),
+                Span::styled("RESUME PREVIOUS", Style::default().fg(Color::Green).bold()),
+                Span::styled(" «", Style::default().fg(Color::Yellow).bold()),
+            ]));
+        } else {
+            options.push(Line::from(vec![
+                Span::styled("  ", Style::default()),
+                Span::styled("RESUME PREVIOUS", Style::default().fg(Color::Green).dim()),
+                Span::styled("  ", Style::default()),
+            ]));
+        }
+    }
+
+    for (i, config) in app.configs().iter().enumerate() {
+        let actual_idx = if app.has_saved_session() { i + 1 } else { i };
+        
+        if actual_idx == app.selected_index() {
+            options.push(Line::from(vec![
+                Span::styled("» ", Style::default().fg(Color::Yellow).bold()),
                 Span::styled(&config.label, Style::default().fg(Color::White).bold()),
                 Span::styled(" «", Style::default().fg(Color::Yellow).bold()),
             ]));
         } else {
             options.push(Line::from(vec![
-                Span::styled("    ", Style::default()),
+                Span::styled("  ", Style::default()),
                 Span::styled(&config.label, Style::default().fg(Color::DarkGray)),
+                Span::styled("  ", Style::default()),
             ]));
         }
     }
@@ -57,13 +81,11 @@ pub fn render(f: &mut Frame, app: &App, area: ratatui::layout::Rect) {
     let menu_block = Block::default()
         .borders(Borders::ALL)
         .border_type(BorderType::Rounded)
-        .border_style(Style::default().fg(Color::Cyan))
-        .title(" Select Mode ")
-        .title_alignment(Alignment::Center);
+        .border_style(Style::default().fg(Color::Cyan));
 
     let menu_widget = Paragraph::new(options)
         .block(menu_block)
-        .alignment(Alignment::Center);
+        .alignment(Alignment::Center); // Keep content centered
 
     let footer = Paragraph::new(vec![
         Line::from(""),
@@ -75,7 +97,7 @@ pub fn render(f: &mut Frame, app: &App, area: ratatui::layout::Rect) {
         .direction(Direction::Vertical)
         .constraints([
             Constraint::Length(4),
-            Constraint::Length(5),
+            Constraint::Length(menu_box_height),
             Constraint::Length(3),
         ])
         .split(inner_chunks[1]);
